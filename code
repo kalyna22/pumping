@@ -1,0 +1,48 @@
+import os
+import telebot
+import requests
+
+Отримуємо токен бота з змінної середовища
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
+bot = telebot.TeleBot(BOT_TOKEN)
+
+Створюємо обробник повідомлень, який реагує на будь-який текст
+@bot.message_handler(func=lambda msg: True)
+def search_bot(message):
+
+Отримуємо текст повідомлення від користувача
+query = message.text
+
+Використовуємо API Bing для пошуку веб-сторінок за запитом
+response = requests.get(f'https://api.bing.microsoft.com/v7.0/search?q={query}', headers={'Ocp-Apim-Subscription-Key': 'your-api-key-here'})
+
+Перевіряємо, чи отримали ми успішну відповідь
+if response.status_code == 200:
+
+Отримуємо результати пошуку в форматі JSON
+data = response.json()
+
+Отримуємо список веб-сторінок
+webpages = data.get('webPages', {}).get('value', [])
+
+Якщо список не пустий, то формуємо відповідь з першими п'ятьма посиланнями
+if webpages:
+answer = 'Ось деякі веб-сторінки, які я знайшов за вашим запитом:\n\n'
+for webpage in webpages[:5]:
+
+Додаємо назву та URL веб-сторінки до відповіді
+answer += f"{webpage['name']}\n{webpage['url']}\n\n"
+
+Якщо список пустий, то повідомляємо, що нічого не знайдено
+else:
+answer = 'На жаль, я не знайшов жодної веб-сторінки за вашим запитом.'
+
+Якщо отримали помилку, то повідомляємо про це
+else:
+answer = 'Вибачте, але у мене виникла проблема з пошуком. Спробуйте пізніше.'
+
+Відправляємо відповідь користувачеві
+bot.reply_to(message, answer)
+
+Запускаємо бота
+bot.polling()
